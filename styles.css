@@ -400,20 +400,21 @@ a {
 
 .portrait {
   width: 100%;
-  min-height: 120px;
+  min-height: 138px;
   display: grid;
   place-items: center;
   font-size: 4rem;
   border: 4px solid #13355f;
   border-radius: 20px;
   background: #fff;
+  padding: 6px;
 }
 
 .portrait .hero-avatar-img {
   width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 16px;
+  height: 126px;
+  object-fit: contain;
+  border-radius: 14px;
   display: block;
 }
 
@@ -940,6 +941,25 @@ a {
   outline-offset: 2px;
 }
 
+.give-card {
+  display: grid;
+  place-items: center;
+  padding: 12px;
+}
+
+.side-give-link {
+  width: 100%;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  background: transparent;
+}
+
+.side-give-image {
+  width: 100%;
+  display: block;
+}
+
 .start-actions,
 .stack-actions {
   margin-top: 8px;
@@ -1153,6 +1173,12 @@ a {
   gap: 12px;
   flex-wrap: wrap;
   justify-content: flex-end;
+  width: 100%;
+  padding-right: 26px;
+}
+
+.site-footer .footer-actions .ui-btn {
+  min-width: 220px;
 }
 
 .give-image-link {
@@ -1328,7 +1354,8 @@ a {
   }
 
   .right-panel .portrait-card,
-  .right-panel .controls-card {
+  .right-panel .controls-card,
+  .right-panel .give-card {
     display: none;
   }
 
@@ -1351,6 +1378,7 @@ a {
 
   .footer-actions {
     justify-content: flex-start;
+    padding-right: 0;
   }
 }
 
@@ -1468,7 +1496,8 @@ a {
   }
 
   .right-panel .portrait-card,
-  .right-panel .controls-card {
+  .right-panel .controls-card,
+  .right-panel .give-card {
     display: none;
   }
 

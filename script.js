@@ -144,7 +144,7 @@ const garbageTimerEl = document.getElementById("garbageTimer");
 const sludgeTimerEl = document.getElementById("sludgeTimer");
 
 const heroPortrait = document.getElementById("heroPortrait");
-const heroNameEl = document.getElementById("heroName");
+const heroPanelTitle = document.getElementById("heroPanelTitle");
 const topHero = document.getElementById("topHero");
 const topHeroName = document.getElementById("topHeroName");
 const topTugMarker = document.getElementById("topTugMarker");
@@ -1570,7 +1570,9 @@ function applyProfile(profile) {
   soundEnabled = profile.sound !== "off";
 
   renderAvatarInto(heroPortrait, heroChoice);
-  heroNameEl.textContent = playerName;
+  if (heroPanelTitle) {
+    heroPanelTitle.textContent = playerName;
+  }
   renderAvatarInto(topHero, heroChoice);
   topHeroName.textContent = playerName;
 }
@@ -1714,7 +1716,9 @@ function restoreGameProgress(progress) {
   setMilestoneMessage(progress.lastMilestoneMessage || DEFAULT_MILESTONE_TEXT);
 
   renderAvatarInto(heroPortrait, heroChoice);
-  heroNameEl.textContent = playerName;
+  if (heroPanelTitle) {
+    heroPanelTitle.textContent = playerName;
+  }
   renderAvatarInto(topHero, heroChoice);
   topHeroName.textContent = playerName;
 }
