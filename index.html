@@ -25,7 +25,6 @@
 
       <div class="header-actions">
         <button id="howBtn" class="ui-btn secondary" type="button">How To Play</button>
-        <button id="profileBtn" class="ui-btn primary" type="button">Profile</button>
         <button id="pauseBtn" class="ui-btn secondary" type="button">Pause</button>
       </div>
     </header>
@@ -41,7 +40,6 @@
           <div class="duel-rope"></div>
           <div id="topTugMarker" class="duel-knot"></div>
         </div>
-        <div class="duel-note">Make matches, lower contamination, and keep the rope on your side.</div>
       </div>
 
       <div class="duel-player">
@@ -59,16 +57,16 @@
             <strong id="levelText">1</strong>
           </div>
           <div class="score-line">
-            <span class="label">Score</span>
-            <strong id="scoreText">0</strong>
+            <span class="label">Dirty Blobs</span>
+            <strong id="dirtyCountText">0</strong>
           </div>
           <div class="score-line">
             <span class="label">Time</span>
             <strong id="timeText">00:00</strong>
           </div>
           <div class="score-line">
-            <span class="label">Dirty Blobs</span>
-            <strong id="dirtyCountText">0</strong>
+            <span class="label">Score</span>
+            <strong id="scoreText">0</strong>
           </div>
         </section>
 
@@ -267,7 +265,8 @@
       <p id="endMessage">Try again and keep the bottle cleaner for longer.</p>
 
       <div id="resultStage" class="result-stage lose">
-        <div id="resultVillain" class="result-actor villain-actor" aria-hidden="true">👉😂</div>
+        <div id="resultVillain" class="result-actor villain-actor" aria-hidden="true">😂</div>
+        <div id="resultPointer" class="result-actor pointer-actor" aria-hidden="true">👉</div>
         <div id="resultHero" class="result-actor hero-actor" aria-hidden="true">🧑‍🔧</div>
         <div id="resultWater" class="result-water dirty-water"></div>
       </div>

@@ -133,6 +133,11 @@ a {
   gap: 10px;
   flex-wrap: wrap;
   justify-content: flex-end;
+  align-items: center;
+}
+
+.header-actions .ui-btn {
+  min-width: 128px;
 }
 
 .ui-btn,
@@ -905,19 +910,29 @@ a {
   right: 40px;
 }
 
+.pointer-actor {
+  left: 94px;
+}
+
 .result-stage.win .villain-actor {
   transform: translateY(92px) rotate(12deg);
 }
 
 .result-stage.win .hero-actor {
-  animation: dance 0.55s ease-in-out infinite;
+  left: 50%;
+  right: auto;
+  animation: dance-center 0.55s ease-in-out infinite;
 }
 
 .result-stage.lose .hero-actor {
-  transform: translateY(92px) rotate(18deg);
+  animation: hero-fall-into-water 2s cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
 }
 
 .result-stage.lose .villain-actor {
+  animation: laugh 0.45s ease-in-out infinite;
+}
+
+.result-stage.lose .pointer-actor {
   animation: laugh 0.45s ease-in-out infinite;
 }
 
@@ -1064,12 +1079,37 @@ a {
   100% { transform: rotate(0deg) translateY(0); }
 }
 
+@keyframes dance-center {
+  0% { transform: translateX(-50%) rotate(0deg) translateY(0); }
+  25% { transform: translateX(-50%) rotate(-9deg) translateY(-6px); }
+  50% { transform: translateX(-50%) rotate(9deg) translateY(-10px); }
+  75% { transform: translateX(-50%) rotate(-9deg) translateY(-6px); }
+  100% { transform: translateX(-50%) rotate(0deg) translateY(0); }
+}
+
 @keyframes laugh {
   0% { transform: rotate(0deg) translateY(0); }
   25% { transform: rotate(8deg) translateY(-2px); }
   50% { transform: rotate(-8deg) translateY(0); }
   75% { transform: rotate(8deg) translateY(-2px); }
   100% { transform: rotate(0deg) translateY(0); }
+}
+
+@keyframes hero-fall-into-water {
+  0% {
+    transform: translateY(0) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+
+  65% {
+    transform: translateY(66px) rotate(16deg) scale(0.98);
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateY(96px) rotate(22deg) scale(0.9);
+    opacity: 0.82;
+  }
 }
 
 @keyframes pop-clear {
@@ -1235,6 +1275,11 @@ a {
   .header-actions {
     width: 100%;
     justify-content: flex-end;
+    gap: 8px;
+  }
+
+  .header-actions .ui-btn {
+    min-width: 0;
   }
 
   .arcade {

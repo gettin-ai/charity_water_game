@@ -13,21 +13,21 @@ const SLUDGE_INTERVAL = 18;
 const CLICKABLE_INTERVAL = 10;
 const BASE_SLUDGE_CHANCE = 0.35;
 const MAX_JERRY_STREAK = 2;
-const PASSIVE_CONTAM_EVERY = 6;
+const PASSIVE_CONTAM_EVERY = 4;
 
 const CLEAR_SCORE = 25;
 const DIRTY_CLEAR_BONUS = 20;
 const JERRY_SCORE = 75;
 const SLUDGE_CLICK_CONTAM_REDUCTION = 10;
-const SLUDGE_MISS_CONTAM_GAIN = 5;
+const SLUDGE_MISS_CONTAM_GAIN = 6;
 
-const FAIL_CONTAM_GAIN = 1;
+const FAIL_CONTAM_GAIN = 2;
 const FAIL_TUG_LOSS = 2;
 const CLEAR_TUG_GAIN = 12;
-const CLEAR_PURIFY_GAIN = 16;
+const CLEAR_PURIFY_GAIN = 12;
 const DIRTY_ROW_TUG_LOSS = 8;
 const SLUDGE_GRID_CONTAM_GAIN = 8;
-const DIRTY_ROW_CONTAM_GAIN = 24;
+const DIRTY_ROW_CONTAM_GAIN = 26;
 
 const FLUSH_REMOVE_COUNT = 4;
 const CLEAR_ANIMATION_MS = 220;
@@ -102,6 +102,7 @@ let nextCapsuleId = 1;
 let boardBusy = false;
 let clearingCells = new Set();
 let jerrySpawnStreak = 0;
+let howOverlayPausedGame = false;
 
 let dirtyRowCountdown = DIRTY_ROW_INTERVAL;
 let sludgeCountdown = SLUDGE_INTERVAL;
@@ -151,6 +152,9 @@ const countdownDisplay = document.getElementById("countdownDisplay");
 
 let bootReadyForInput = false;
 let bootTimer = null;
+let countdownScrollRaf = null;
+const BOTTLE_VIEWPORT_MARGIN = 14;
+const COUNTDOWN_FINE_TUNE_DOWN = 18;
 
 const profileForm = document.getElementById("profileForm");
 const playerNameInput = document.getElementById("playerNameInput");
@@ -164,6 +168,7 @@ const endScore = document.getElementById("endScore");
 const endTimeLabel = document.getElementById("endTimeLabel");
 const endTime = document.getElementById("endTime");
 const resultVillain = document.getElementById("resultVillain");
+const resultPointer = document.getElementById("resultPointer");
 const resultHero = document.getElementById("resultHero");
 const resultWater = document.getElementById("resultWater");
 const resultStage = document.getElementById("resultStage");
@@ -184,8 +189,30 @@ const soundCount1 = document.getElementById("soundCount1");
 const soundCountGo = document.getElementById("soundCountGo");
 const soundWin = document.getElementById("soundWin");
 const soundLose = document.getElementById("soundLose");
+const criticalSounds = [soundPause, soundWin, soundLose];
+let criticalAudioPrimed = false;
+
+const allSoundEffects = [
+  soundButton,
+  soundCollect,
+  soundJerryCan,
+  soundMiss,
+  soundAlert,
+  soundWarningBubble,
+  soundFlush,
+  soundMilestone,
+  soundPause,
+  soundCount3,
+  soundCount2,
+  soundCount1,
+  soundCountGo,
+  soundWin,
+  soundLose
+];
 
 document.addEventListener("click", (event) => {
+  primeCriticalAudio();
+
   const startGameButton = event.target.closest("#profileForm button[type='submit']");
   if (startGameButton) return;
 
@@ -194,13 +221,24 @@ document.addEventListener("click", (event) => {
   }
 });
 
-document.getElementById("howBtn").addEventListener("click", () => openOverlay(howOverlay));
-document.getElementById("closeHowBtn").addEventListener("click", () => closeOverlay(howOverlay));
+document.getElementById("howBtn").addEventListener("click", () => {
+  howOverlayPausedGame = false;
 
-document.getElementById("profileBtn").addEventListener("click", () => {
-  if (running && !paused) pauseGame();
-  loadProfileIntoForm();
-  openOverlay(startOverlay);
+  if (pauseGameplayForHowOverlay()) {
+    howOverlayPausedGame = true;
+  }
+
+  openOverlay(howOverlay);
+});
+
+document.getElementById("closeHowBtn").addEventListener("click", () => {
+  closeOverlay(howOverlay);
+
+  if (howOverlayPausedGame) {
+    resumeGameplayFromHowOverlay();
+  }
+
+  howOverlayPausedGame = false;
 });
 
 document.getElementById("pauseBtn").addEventListener("click", () => {
@@ -255,6 +293,9 @@ profileForm.addEventListener("submit", (e) => {
 window.addEventListener("keydown", (e) => {
   const typingTarget = isTypingTarget(e.target);
 
+  // Keep gameplay paused while the How To Play overlay is open.
+  if (howOverlay.classList.contains("open")) return;
+
   if (!typingTarget && (e.code === "Space" || e.key.toLowerCase() === "p")) {
     e.preventDefault();
     if (countingDown) return;
@@ -297,6 +338,35 @@ function playSound(audioEl, volume = 0.55) {
     }
   } catch {
     /* ignore audio playback errors */
+  }
+}
+
+function primeCriticalAudio() {
+  if (criticalAudioPrimed) return;
+
+  for (const audioEl of criticalSounds) {
+    if (!audioEl || !audioEl.getAttribute("src")) continue;
+    try {
+      audioEl.preload = "auto";
+      audioEl.load();
+    } catch {
+      /* ignore audio preload errors */
+    }
+  }
+
+  criticalAudioPrimed = true;
+}
+
+function stopOtherSounds(keepSound) {
+  for (const audioEl of allSoundEffects) {
+    if (!audioEl || audioEl === keepSound) continue;
+
+    try {
+      audioEl.pause();
+      audioEl.currentTime = 0;
+    } catch {
+      /* ignore audio stop errors */
+    }
   }
 }
 
@@ -346,6 +416,9 @@ function startLevelCountdown(onDone) {
   running = false;
   paused = true;
 
+  // Reset to top, then pan down to the bottle while the countdown runs.
+  startCountdownScrollToBottle();
+
   let count = 3;
   countdownDisplay.textContent = count;
   playSound(soundCount3, 0.55);
@@ -363,6 +436,7 @@ function startLevelCountdown(onDone) {
       }
     } else if (count === 0) {
       countdownDisplay.textContent = "Go!";
+      centerBottleInViewport();
       playSound(soundCountGo, 0.58);
     } else {
       clearInterval(timer);
@@ -373,6 +447,63 @@ function startLevelCountdown(onDone) {
       onDone();
     }
   }, 1000);
+}
+
+function startCountdownScrollToBottle() {
+  if (countdownScrollRaf) {
+    window.cancelAnimationFrame(countdownScrollRaf);
+    countdownScrollRaf = null;
+  }
+
+  window.scrollTo({ top: 0, behavior: "auto" });
+
+  const targetY = getBottleFramingScrollTop();
+  const startY = window.scrollY;
+  const durationMs = 3000;
+  const startTime = performance.now();
+
+  const step = (now) => {
+    const elapsed = now - startTime;
+    const progress = Math.min(elapsed / durationMs, 1);
+    const eased = progress * progress * (3 - 2 * progress);
+    const y = startY + ((targetY - startY) * eased);
+
+    window.scrollTo({ top: y, behavior: "auto" });
+
+    if (progress < 1 && countingDown) {
+      countdownScrollRaf = window.requestAnimationFrame(step);
+    } else {
+      countdownScrollRaf = null;
+    }
+  };
+
+  countdownScrollRaf = window.requestAnimationFrame(step);
+}
+
+function centerBottleInViewport() {
+  if (countdownScrollRaf) {
+    window.cancelAnimationFrame(countdownScrollRaf);
+    countdownScrollRaf = null;
+  }
+
+  window.scrollTo({ top: getBottleFramingScrollTop(), behavior: "auto" });
+}
+
+function getBottleFramingScrollTop() {
+  const bottle = document.querySelector(".bottle-wrap");
+  if (!bottle) return 0;
+
+  const rect = bottle.getBoundingClientRect();
+  const bottleTopInDocument = window.scrollY + rect.top;
+  const bottleBottomInDocument = bottleTopInDocument + rect.height;
+
+  // Keep a small margin and frame the whole bottle when possible.
+  const minTop = bottleBottomInDocument - window.innerHeight + BOTTLE_VIEWPORT_MARGIN;
+  const maxTop = bottleTopInDocument - BOTTLE_VIEWPORT_MARGIN;
+  const desiredTop = ((minTop + maxTop) / 2) + COUNTDOWN_FINE_TUNE_DOWN;
+  const maxScrollTop = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+
+  return clamp(desiredTop, 0, maxScrollTop);
 }
 
 function makeCell(color, dirty = false, capsuleId = null) {
@@ -606,14 +737,20 @@ async function lockPiece() {
       tug = clamp(tug - FAIL_TUG_LOSS, -100, 100);
     }
 
+    const dirtyCountAfterResolve = countDirtyBlobs();
+    if (dirtyCountAfterResolve === 0) {
+      winGame("You cleared all dirty water from the grid.");
+      return;
+    }
+
     if (purification >= 100) {
       purification = 0;
       await flushDirtyWater();
-    }
 
-    if (countDirtyBlobs() === 0) {
-      winGame("You cleared all dirty water from the grid.");
-      return;
+      if (countDirtyBlobs() === 0) {
+        winGame("You cleared all dirty water from the grid.");
+        return;
+      }
     }
 
     if (contamination >= 100) {
@@ -956,7 +1093,7 @@ function spawnClickable() {
   item.addEventListener("click", () => {
     if (type === "jerry") {
       score += JERRY_SCORE;
-      purification = clamp(purification + 8, 0, 100);
+      purification = clamp(purification + 7, 0, 100);
       showScoreChangeAtItem(item, `+${JERRY_SCORE}`);
       announceMilestone("Nice catch. The jerry can boosted purification.");
       playSound(soundJerryCan, 0.55);
@@ -1135,9 +1272,23 @@ function pauseGame() {
   paused = true;
   clearTimeout(milestoneToastTimeout);
   milestoneToast.classList.remove("show");
-  saveGameProgress();
   playSound(soundPause, 0.5);
+  saveGameProgress();
   openOverlay(pauseOverlay);
+}
+
+function pauseGameplayForHowOverlay() {
+  if (!running || paused || countingDown) return false;
+
+  paused = true;
+  clearTimeout(milestoneToastTimeout);
+  milestoneToast.classList.remove("show");
+  return true;
+}
+
+function resumeGameplayFromHowOverlay() {
+  if (countingDown || !paused) return;
+  paused = false;
 }
 
 function resumeGame() {
@@ -1151,6 +1302,8 @@ function winGame(message) {
   paused = false;
   clearLoops();
   clearGameProgress();
+  stopOtherSounds(soundWin);
+  playSound(soundWin, 0.62);
 
   const timeBonus = calculateTimeBonus();
   const finalScore = score + timeBonus;
@@ -1167,11 +1320,10 @@ function winGame(message) {
   playAgainBtn.dataset.action = "next-level";
 
   resultVillain.textContent = "🕴️";
+  resultPointer.textContent = "";
   resultHero.textContent = HEROES[heroChoice];
   resultWater.className = "result-water clean-water";
   resultStage.className = "result-stage win";
-
-  playSound(soundWin, 0.62);
   announceMilestone("Victory. The bottle is clean.");
   openOverlay(endOverlay);
 }
@@ -1181,6 +1333,8 @@ function loseGame(message) {
   paused = false;
   clearLoops();
   clearGameProgress();
+  stopOtherSounds(soundLose);
+  playSound(soundLose, 0.6);
 
   // Animate the knot moving to the left (player loses)
   topTugMarker.classList.add("pulling-lose");
@@ -1193,12 +1347,14 @@ function loseGame(message) {
   playAgainBtn.textContent = "Play Again";
   playAgainBtn.dataset.action = "restart";
 
-  resultVillain.textContent = "👉😂";
+  resultVillain.textContent = "😂";
+  resultPointer.textContent = "👉";
   resultHero.textContent = HEROES[heroChoice];
+  resultHero.style.animation = "none";
+  void resultHero.offsetWidth;
+  resultHero.style.animation = "";
   resultWater.className = "result-water dirty-water";
   resultStage.className = "result-stage lose";
-
-  playSound(soundLose, 0.6);
   openOverlay(endOverlay);
 }
 
@@ -1394,7 +1550,6 @@ function continueFromBootScreen() {
 }
 
 function hideBootScreenAndContinue() {
-  if (!bootReadyForInput) return;
   closeOverlay(bootOverlay);
   continueFromBootScreen();
 }
@@ -1416,7 +1571,6 @@ function showBootScreen() {
   }, 3200);
 
   const onBegin = () => {
-    if (!bootReadyForInput) return;
     bootOverlay.removeEventListener("click", onBegin);
     bootOverlay.removeEventListener("touchstart", onBegin);
     document.removeEventListener("keydown", onKeyDownBegin);
@@ -1468,6 +1622,7 @@ function clearGameProgress() {
 }
 
 function init() {
+  primeCriticalAudio();
   createGrid();
   resetGrid();
   loadProfileIntoForm();
