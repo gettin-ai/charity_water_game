@@ -169,10 +169,17 @@ const soundAlert = document.getElementById("soundAlert");
 const soundFlush = document.getElementById("soundFlush");
 const soundMilestone = document.getElementById("soundMilestone");
 const soundPause = document.getElementById("soundPause");
+const soundCount3 = document.getElementById("soundCount3");
+const soundCount2 = document.getElementById("soundCount2");
+const soundCount1 = document.getElementById("soundCount1");
+const soundCountGo = document.getElementById("soundCountGo");
 const soundWin = document.getElementById("soundWin");
 const soundLose = document.getElementById("soundLose");
 
 document.addEventListener("click", (event) => {
+  const startGameButton = event.target.closest("#profileForm button[type='submit']");
+  if (startGameButton) return;
+
   if (event.target.closest(".ui-btn, .control-btn")) {
     playSound(soundButton, 0.45);
   }
@@ -328,6 +335,7 @@ function startLevelCountdown(onDone) {
 
   let count = 3;
   countdownDisplay.textContent = count;
+  playSound(soundCount3, 0.55);
   openOverlay(countdownOverlay);
 
   const timer = setInterval(() => {
@@ -335,8 +343,14 @@ function startLevelCountdown(onDone) {
 
     if (count > 0) {
       countdownDisplay.textContent = count;
+      if (count === 2) {
+        playSound(soundCount2, 0.55);
+      } else if (count === 1) {
+        playSound(soundCount1, 0.55);
+      }
     } else if (count === 0) {
       countdownDisplay.textContent = "Go!";
+      playSound(soundCountGo, 0.58);
     } else {
       clearInterval(timer);
       closeOverlay(countdownOverlay);
@@ -830,6 +844,7 @@ function addSludgeBlobToGrid() {
     if (!grid[r][c]) {
       grid[r][c] = makeCell(COLORS[rand(0, COLORS.length - 1)], true);
       contamination = clamp(contamination + SLUDGE_GRID_CONTAM_GAIN, 0, 100);
+      playSound(soundAlert, 0.42);
       return;
     }
   }
@@ -840,6 +855,7 @@ function addSludgeBlobToGrid() {
     if (!grid[r][c]) {
       grid[r][c] = makeCell(COLORS[rand(0, COLORS.length - 1)], true);
       contamination = clamp(contamination + SLUDGE_GRID_CONTAM_GAIN, 0, 100);
+      playSound(soundAlert, 0.42);
       return;
     }
   }
@@ -940,6 +956,10 @@ function spawnClickable() {
   });
 
   floatingItemsEl.appendChild(item);
+
+  if (type === "sludge") {
+    playSound(soundAlert, 0.42);
+  }
 
   setTimeout(() => {
     if (!item.isConnected) return;
