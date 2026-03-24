@@ -172,7 +172,7 @@
           Visit Website
         </a>
         <a class="ui-btn primary footer-link" href="https://www.charitywater.org/donate" target="_blank" rel="noopener noreferrer">
-          Donate
+          GIVE
         </a>
       </div>
     </footer>
@@ -192,6 +192,15 @@
           <input id="playerNameInput" name="playerName" type="text" maxlength="16" placeholder="Player">
         </label>
 
+        <label for="characterSelect">
+          Character
+          <select id="characterSelect" name="character">
+            <option value="builder">Builder</option>
+            <option value="student">Student</option>
+            <option value="field">Field Worker</option>
+          </select>
+        </label>
+
         <label for="speedSelect">
           Drop Speed
           <select id="speedSelect" name="speed">
@@ -201,12 +210,11 @@
           </select>
         </label>
 
-        <label for="characterSelect">
-          Character
-          <select id="characterSelect" name="character">
-            <option value="builder">Builder</option>
-            <option value="student">Student</option>
-            <option value="field">Field Worker</option>
+        <label for="soundSelect">
+          Sound
+          <select id="soundSelect" name="sound">
+            <option value="on" selected>On</option>
+            <option value="off">Off</option>
           </select>
         </label>
 

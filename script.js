@@ -88,6 +88,7 @@ let timeLeft = 0;
 let gameSpeed = "slow";
 let playerName = "Player";
 let heroChoice = "builder";
+let soundEnabled = true;
 let currentLevel = 1;
 
 let running = false;
@@ -150,6 +151,7 @@ const profileForm = document.getElementById("profileForm");
 const playerNameInput = document.getElementById("playerNameInput");
 const speedSelect = document.getElementById("speedSelect");
 const characterSelect = document.getElementById("characterSelect");
+const soundSelect = document.getElementById("soundSelect");
 
 const endTitle = document.getElementById("endTitle");
 const endMessage = document.getElementById("endMessage");
@@ -276,6 +278,7 @@ window.addEventListener("keydown", (e) => {
 });
 
 function playSound(audioEl, volume = 0.55) {
+  if (!soundEnabled) return;
   if (!audioEl || !audioEl.getAttribute("src")) return;
 
   try {
@@ -1261,7 +1264,8 @@ function saveProfileFromForm() {
   const profile = {
     name: playerNameInput.value.trim() || "Player",
     speed: speedSelect.value,
-    character: characterSelect.value
+    character: characterSelect.value,
+    sound: soundSelect.value
   };
   localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
   applyProfile(profile);
@@ -1281,6 +1285,7 @@ function applyProfile(profile) {
   timeLeft = 0;
   gameSpeed = profile.speed || "slow";
   heroChoice = profile.character || "builder";
+  soundEnabled = profile.sound !== "off";
 
   const heroEmoji = HEROES[heroChoice];
   heroPortrait.textContent = heroEmoji;
@@ -1293,12 +1298,14 @@ function loadProfileIntoForm() {
   const profile = getSavedProfile() || {
     name: "Player",
     speed: "slow",
-    character: "builder"
+    character: "builder",
+    sound: "on"
   };
 
   playerNameInput.value = profile.name;
   speedSelect.value = profile.speed;
   characterSelect.value = profile.character;
+  soundSelect.value = profile.sound || "on";
   applyProfile(profile);
 }
 
@@ -1316,6 +1323,7 @@ function saveGameProgress() {
     gameSpeed,
     playerName,
     heroChoice,
+    soundEnabled,
     dirtyRowCountdown,
     sludgeCountdown,
     passiveContamCounter,
@@ -1357,6 +1365,7 @@ function restoreGameProgress(progress) {
   gameSpeed = progress.gameSpeed;
   playerName = progress.playerName;
   heroChoice = progress.heroChoice;
+  soundEnabled = progress.soundEnabled !== false;
   dirtyRowCountdown = progress.dirtyRowCountdown;
   sludgeCountdown = progress.sludgeCountdown;
   passiveContamCounter = progress.passiveContamCounter;
