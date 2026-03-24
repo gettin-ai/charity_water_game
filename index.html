@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Purify Drop</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="page-shell">
+    <header class="game-header">
+      <div class="brand-lockup">
+        <div class="brand-drop" aria-hidden="true">💧</div>
+        <div>
+          <h1>Purify Drop</h1>
+          <p>Clear polluted water and pull the rope toward clean water.</p>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <button id="howBtn" class="ui-btn secondary" type="button">How To Play</button>
+        <button id="profileBtn" class="ui-btn primary" type="button">Profile</button>
+        <button id="pauseBtn" class="ui-btn secondary" type="button">Pause</button>
+      </div>
+    </header>
+
+    <section class="top-duel panel-card">
+      <div class="duel-player">
+        <div class="duel-avatar villain" aria-hidden="true">🕴️</div>
+        <div class="duel-name">Polluter</div>
+      </div>
+
+      <div class="duel-center">
+        <div class="duel-track" aria-label="Tug of war progress">
+          <div class="duel-rope"></div>
+          <div id="topTugMarker" class="duel-knot"></div>
+        </div>
+        <div class="duel-note">Make matches, lower contamination, and keep the rope on your side.</div>
+      </div>
+
+      <div class="duel-player">
+        <div id="topHero" class="duel-avatar hero" aria-hidden="true">🧑‍🔧</div>
+        <div id="topHeroName" class="duel-name">Player</div>
+      </div>
+    </section>
+
+    <main class="arcade">
+      <aside class="side-panel left-panel">
+        <section class="panel-card">
+          <div class="panel-title">Scoreboard</div>
+          <div class="score-line">
+            <span class="label">Score</span>
+            <strong id="scoreText">0</strong>
+          </div>
+          <div class="score-line">
+            <span class="label">Time</span>
+            <strong id="timeText">02:00</strong>
+          </div>
+          <div class="score-line">
+            <span class="label">Dirty Blobs</span>
+            <strong id="dirtyCountText">0</strong>
+          </div>
+        </section>
+
+        <section class="panel-card contamination-meter">
+          <div class="meter-head">
+            <span>Contamination</span>
+            <span id="contaminationText">0/100</span>
+          </div>
+          <div class="meter">
+            <div id="contaminationFill" class="meter-fill"></div>
+          </div>
+          <p class="meter-note">If this fills up, a dirty row rises from the bottom.</p>
+        </section>
+
+        <section class="panel-card purification-meter">
+          <div class="meter-head">
+            <span>Purification</span>
+            <span id="purificationText">0/100</span>
+          </div>
+          <div class="meter">
+            <div id="purificationFill" class="meter-fill"></div>
+          </div>
+          <p class="meter-note">Fill this to flush several dirty blobs out of the bottle.</p>
+        </section>
+
+        <section class="panel-card tip-card">
+          <div class="panel-title">Warnings</div>
+          <div class="score-line">
+            <span class="label">Dirty Row</span>
+            <strong id="garbageTimer">35s</strong>
+          </div>
+          <div class="score-line">
+            <span class="label">Sludge Drop</span>
+            <strong id="sludgeTimer">18s</strong>
+          </div>
+          <p>Watch the timers. The longer the round lasts, the messier the bottle gets.</p>
+        </section>
+      </aside>
+
+      <section class="center-stage">
+        <div class="bottle-wrap">
+          <div class="bottle-neck"></div>
+          <div class="bottle-body">
+            <div id="grid" class="grid" aria-label="Game grid"></div>
+            <div id="floatingItems" class="floating-items" aria-live="polite"></div>
+            <div class="grid-footer">charity: water</div>
+          </div>
+        </div>
+
+        <div class="mobile-controls" aria-label="Movement controls">
+          <button id="leftBtn" class="control-btn" type="button">◀</button>
+          <button id="rotateBtn" class="control-btn" type="button">⟳</button>
+          <button id="rightBtn" class="control-btn" type="button">▶</button>
+          <button id="downBtn" class="control-btn" type="button">▼</button>
+        </div>
+      </section>
+
+      <aside class="side-panel right-panel">
+        <section class="panel-card portrait-card">
+          <div class="panel-title">Your Hero</div>
+          <div id="heroPortrait" class="portrait hero" aria-hidden="true">🧑‍🔧</div>
+          <div id="heroName" class="portrait-caption">Player</div>
+        </section>
+
+        <section id="nextPieceCard" class="panel-card">
+          <div class="panel-title">Next Piece</div>
+          <div id="nextPreview" class="next-preview" aria-label="Next piece preview">
+            <div class="preview-cell empty"></div>
+            <div class="preview-cell empty"></div>
+          </div>
+        </section>
+
+        <section class="panel-card controls-card">
+          <div class="panel-title">Controls</div>
+          <p>Arrow keys move pieces.</p>
+          <p>Up arrow rotates a piece.</p>
+          <p>Space or P pauses the game.</p>
+          <p>Use the on-screen buttons on touch devices.</p>
+        </section>
+      </aside>
+    </main>
+  </div>
+
+  <div id="startOverlay" class="overlay open" role="dialog" aria-modal="true" aria-labelledby="startTitle">
+    <div class="overlay-panel">
+      <h2 id="startTitle">Build Your Water Hero</h2>
+      <p>Choose a name, game length, speed, and character before you start cleaning the bottle.</p>
+
+      <form id="profileForm" class="profile-form">
+        <label for="playerNameInput">
+          Player Name
+          <input id="playerNameInput" name="playerName" type="text" maxlength="16" placeholder="Player">
+        </label>
+
+        <label for="speedSelect">
+          Drop Speed
+          <select id="speedSelect" name="speed">
+            <option value="slow" selected>Slow</option>
+            <option value="normal">Normal</option>
+            <option value="fast">Fast</option>
+          </select>
+        </label>
+
+        <label for="characterSelect">
+          Character
+          <select id="characterSelect" name="character">
+            <option value="builder">Builder</option>
+            <option value="student">Student</option>
+            <option value="field">Field Worker</option>
+          </select>
+        </label>
+
+        <div class="start-actions">
+          <button class="ui-btn primary" type="submit">Start Game</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="howOverlay" class="overlay" role="dialog" aria-modal="true" aria-labelledby="howTitle">
+    <div class="overlay-panel small-panel">
+      <h2 id="howTitle">How To Play</h2>
+      <ol class="how-list">
+        <li>Match 4 blobs of the same color to clear them.</li>
+        <li>Clean and dirty blobs can clear together when 4 or more of the same color connect.</li>
+        <li>Click yellow cans for bonus points and extra purification.</li>
+        <li>Click toxic sludge to avoid contamination and lowering your score.</li>
+        <li>Win by clearing every dirty blob before the bottle fills up.</li>
+      </ol>
+      <div class="stack-actions">
+        <button id="closeHowBtn" class="ui-btn primary" type="button">Back To Game</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="pauseOverlay" class="overlay" role="dialog" aria-modal="true" aria-labelledby="pauseTitle">
+    <div class="overlay-panel small-panel">
+      <h2 id="pauseTitle">Game Paused</h2>
+      <p>Take a breath. Resume when you are ready, or change your profile.</p>
+      <div class="stack-actions">
+        <button id="resumeBtn" class="ui-btn primary" type="button">Resume</button>
+        <button id="saveExitBtn" class="ui-btn secondary" type="button">Save & Exit</button>
+        <button id="editProfileBtn" class="ui-btn secondary" type="button">Edit Profile</button>
+        <button id="resetBtn" class="ui-btn secondary" type="button">Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="endOverlay" class="overlay" role="dialog" aria-modal="true" aria-labelledby="endTitle">
+    <div class="overlay-panel end-panel">
+      <h2 id="endTitle">Game Over</h2>
+      <p id="endMessage">Try again and keep the bottle cleaner for longer.</p>
+
+      <div id="resultStage" class="result-stage lose">
+        <div id="resultVillain" class="result-actor villain-actor" aria-hidden="true">👉😂</div>
+        <div id="resultHero" class="result-actor hero-actor" aria-hidden="true">🧑‍🔧</div>
+        <div id="resultWater" class="result-water dirty-water"></div>
+      </div>
+
+      <div class="end-stats">
+        <div>
+          <span>Score</span>
+          <strong id="endScore">0</strong>
+        </div>
+        <div>
+            <span id="endTimeLabel">Time</span>
+          <strong id="endTime">00:00</strong>
+        </div>
+      </div>
+
+      <div class="stack-actions">
+        <button id="playAgainBtn" class="ui-btn primary" type="button">Play Again</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="countdownOverlay" class="overlay" aria-hidden="true">
+    <div id="countdownDisplay" class="countdown-display">3</div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
