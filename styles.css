@@ -987,6 +987,35 @@ a {
   justify-content: flex-end;
 }
 
+.give-image-link {
+  padding: 0;
+  border: none;
+  box-shadow: none;
+  background: transparent;
+}
+
+.give-image-link:hover,
+.give-image-link:focus-visible {
+  transform: none;
+  filter: none;
+  background: transparent;
+}
+
+.give-button-image {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  background: var(--sand);
+  mix-blend-mode: multiply;
+  transition: transform 0.16s ease, opacity 0.16s ease;
+}
+
+.give-image-link:hover .give-button-image,
+.give-image-link:focus-visible .give-button-image {
+  transform: translateY(-2px) scale(1.03);
+  opacity: 0.95;
+}
+
 @keyframes dance {
   0% { transform: rotate(0deg) translateY(0); }
   25% { transform: rotate(-9deg) translateY(-6px); }
