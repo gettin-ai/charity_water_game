@@ -49,7 +49,7 @@
 
     <main class="arcade">
       <aside class="side-panel left-panel">
-        <section class="panel-card">
+        <section class="panel-card scoreboard-card">
           <div class="panel-title">Scoreboard</div>
           <div class="score-line">
             <span class="label">Level</span>
@@ -92,7 +92,6 @@
         </section>
 
         <section class="panel-card tip-card">
-          <div class="panel-title">Warnings</div>
           <div class="score-line">
             <span class="label">Waste Dump</span>
             <strong id="garbageTimer">35s</strong>
@@ -101,7 +100,6 @@
             <span class="label">Sludge Drop</span>
             <strong id="sludgeTimer">18s</strong>
           </div>
-          <p>Watch the timers. The longer the round lasts, the messier the bottle gets.</p>
         </section>
       </aside>
 
@@ -233,7 +231,7 @@
         <li>Clean and dirty blobs can clear together when 4 or more of the same color connect.</li>
         <li>Click yellow cans for bonus points and extra purification.</li>
         <li>Click toxic sludge when it appears to lower contamination. If you miss it, contamination goes up.</li>
-        <li>Win by clearing every dirty blob before the bottle fills up.</li>
+        <li>Win by clearing every dirty blob before the bottle fills up. Faster wins earn a time bonus.</li>
       </ol>
       <div class="stack-actions">
         <button id="closeHowBtn" class="ui-btn primary" type="button">Back To Game</button>

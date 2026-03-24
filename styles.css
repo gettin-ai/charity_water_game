@@ -396,19 +396,33 @@ a {
   font-family: var(--font-sans);
 }
 
+.tip-card {
+  padding: 10px 12px;
+}
+
+.tip-card .score-line {
+  padding: 8px 0;
+}
+
+.scoreboard-card,
+.portrait-card {
+  min-height: 248px;
+}
+
 .portrait-card {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
   gap: 10px;
   text-align: center;
 }
 
 .portrait {
   width: 100%;
-  min-height: 128px;
+  min-height: 132px;
   max-height: 180px;
+  flex: 1;
   display: grid;
   place-items: center;
   font-size: 4rem;
@@ -446,9 +460,9 @@ a {
 .portrait-card .panel-title.player-name {
   width: 100%;
   margin: 0;
-  font-size: 0.95rem;
-  letter-spacing: 0.06em;
-  line-height: 1.2;
+  font-size: clamp(1.2rem, 1.4vw, 1.6rem);
+  letter-spacing: 0.04em;
+  line-height: 1.15;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
