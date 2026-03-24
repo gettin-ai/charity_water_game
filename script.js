@@ -279,6 +279,7 @@ window.addEventListener("keydown", (e) => {
 
 function playSound(audioEl, volume = 0.55) {
   if (!soundEnabled) return;
+  if (paused && !countingDown && audioEl !== soundPause) return;
   if (!audioEl || !audioEl.getAttribute("src")) return;
 
   try {
@@ -310,6 +311,8 @@ function setMilestoneMessage(text) {
 }
 
 function announceMilestone(text) {
+  if (paused && !countingDown) return;
+
   setMilestoneMessage(text);
   milestoneToast.textContent = text;
   milestoneToast.classList.remove("show");
@@ -969,8 +972,19 @@ function spawnClickable() {
     playSound(soundAlert, 0.42);
   }
 
-  setTimeout(() => {
+  scheduleClickableExpiry(item, type, 5500);
+}
+
+function scheduleClickableExpiry(item, type, delayMs) {
+  window.setTimeout(() => {
     if (!item.isConnected) return;
+
+    // Freeze expiry effects while paused so no hidden game-state changes occur.
+    if (paused || !running || countingDown) {
+      scheduleClickableExpiry(item, type, 250);
+      return;
+    }
+
     if (type === "sludge") {
       contamination = clamp(contamination + SLUDGE_MISS_CONTAM_GAIN, 0, 100);
       showScoreChangeAtItem(item, `+${SLUDGE_MISS_CONTAM_GAIN}`, "pollution");
@@ -986,8 +1000,9 @@ function spawnClickable() {
     } else {
       playSound(soundMiss, 0.35);
     }
+
     item.remove();
-  }, 5500);
+  }, delayMs);
 }
 
 function showScoreChangeAtItem(item, text, style = "positive") {
@@ -1113,6 +1128,8 @@ function goToStartScreen() {
 function pauseGame() {
   if (!running || countingDown) return;
   paused = true;
+  clearTimeout(milestoneToastTimeout);
+  milestoneToast.classList.remove("show");
   saveGameProgress();
   playSound(soundPause, 0.5);
   openOverlay(pauseOverlay);
