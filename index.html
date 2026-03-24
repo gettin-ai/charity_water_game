@@ -185,9 +185,9 @@
 
   <div id="startOverlay" class="overlay open" role="dialog" aria-modal="true" aria-labelledby="startTitle">
     <div class="overlay-panel">
-      <p class="overlay-kicker">build your hero</p>
+      <p class="overlay-kicker">player select</p>
       <h2 id="startTitle">Start Your Cleanup Run</h2>
-      <p>Choose a name, speed, and character before you start cleaning the bottle.</p>
+      <p>Choose a name, avatar, and speed before you start cleaning the bottle.</p>
 
       <form id="profileForm" class="profile-form">
         <label for="playerNameInput">
@@ -195,14 +195,13 @@
           <input id="playerNameInput" name="playerName" type="text" maxlength="16" placeholder="Player">
         </label>
 
-        <label for="characterSelect">
-          Character
-          <select id="characterSelect" name="character">
-            <option value="builder">Builder</option>
-            <option value="student">Student</option>
-            <option value="field">Field Worker</option>
-          </select>
-        </label>
+        <div class="player-select-block">
+          <p class="player-select-label">Player Avatar</p>
+          <button id="openAvatarPickerBtn" class="avatar-picker-trigger" type="button" aria-haspopup="dialog" aria-controls="avatarOverlay">
+            <img id="avatarButtonPreview" src="img/avatar_01.png" alt="Selected avatar preview">
+          </button>
+          <input id="avatarSelectInput" name="character" type="hidden" value="avatar_01">
+        </div>
 
         <label for="speedSelect">
           Drop Speed
@@ -241,6 +240,48 @@
       </ol>
       <div class="stack-actions">
         <button id="closeHowBtn" class="ui-btn primary" type="button">Back To Game</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="avatarOverlay" class="overlay" role="dialog" aria-modal="true" aria-labelledby="avatarOverlayTitle">
+    <div class="overlay-panel small-panel avatar-modal-panel">
+      <p class="overlay-kicker">player select</p>
+      <h2 id="avatarOverlayTitle">Choose Your Avatar</h2>
+      <div id="avatarGrid" class="avatar-grid" role="radiogroup" aria-label="Choose your player avatar">
+        <button class="avatar-option" type="button" data-avatar="avatar_01" aria-pressed="false">
+          <img src="img/avatar_01.png" alt="Avatar 1">
+        </button>
+        <button class="avatar-option" type="button" data-avatar="avatar_02" aria-pressed="false">
+          <img src="img/avatar_02.png" alt="Avatar 2">
+        </button>
+        <button class="avatar-option" type="button" data-avatar="avatar_03" aria-pressed="false">
+          <img src="img/avatar_03.png" alt="Avatar 3">
+        </button>
+        <button class="avatar-option" type="button" data-avatar="avatar_04" aria-pressed="false">
+          <img src="img/avatar_04.png" alt="Avatar 4">
+        </button>
+        <button class="avatar-option" type="button" data-avatar="avatar_05" aria-pressed="false">
+          <img src="img/avatar_05.png" alt="Avatar 5">
+        </button>
+        <button class="avatar-option" type="button" data-avatar="avatar_06" aria-pressed="false">
+          <img src="img/avatar_06.png" alt="Avatar 6">
+        </button>
+        <button class="avatar-option" type="button" data-avatar="avatar_07" aria-pressed="false">
+          <img src="img/avatar_07.png" alt="Avatar 7">
+        </button>
+        <button class="avatar-option" type="button" data-avatar="avatar_08" aria-pressed="false">
+          <img src="img/avatar_08.png" alt="Avatar 8">
+        </button>
+        <button class="avatar-option" type="button" data-avatar="avatar_09" aria-pressed="false">
+          <img src="img/avatar_09.png" alt="Avatar 9">
+        </button>
+        <button class="avatar-option" type="button" data-avatar="avatar_10" aria-pressed="false">
+          <img src="img/avatar_10.png" alt="Avatar 10">
+        </button>
+      </div>
+      <div class="stack-actions">
+        <button id="closeAvatarPickerBtn" class="ui-btn primary" type="button">Done</button>
       </div>
     </div>
   </div>

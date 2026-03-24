@@ -35,10 +35,23 @@ const GRAVITY_STEP_MS = 85;
 
 const COLORS = ["blue", "light", "white"];
 
-const HEROES = {
-  builder: "🧑‍🔧",
-  student: "🧑‍🎓",
-  field: "🧑‍🚰"
+const AVATAR_IDS = [
+  "avatar_01",
+  "avatar_02",
+  "avatar_03",
+  "avatar_04",
+  "avatar_05",
+  "avatar_06",
+  "avatar_07",
+  "avatar_08",
+  "avatar_09",
+  "avatar_10"
+];
+const DEFAULT_AVATAR_ID = "avatar_01";
+const LEGACY_HERO_TO_AVATAR = {
+  builder: "avatar_01",
+  student: "avatar_02",
+  field: "avatar_03"
 };
 
 const PROFILE_KEY = "purify-drop-profile-v3";
@@ -87,7 +100,7 @@ let tug = 0;
 let timeLeft = 0;
 let gameSpeed = "slow";
 let playerName = "Player";
-let heroChoice = "builder";
+let heroChoice = DEFAULT_AVATAR_ID;
 let soundEnabled = true;
 let currentLevel = 1;
 
@@ -144,6 +157,7 @@ const milestoneToast = document.getElementById("milestoneToast");
 const bootOverlay = document.getElementById("bootOverlay");
 const bootPrompt = document.getElementById("bootPrompt");
 const startOverlay = document.getElementById("startOverlay");
+const avatarOverlay = document.getElementById("avatarOverlay");
 const howOverlay = document.getElementById("howOverlay");
 const pauseOverlay = document.getElementById("pauseOverlay");
 const endOverlay = document.getElementById("endOverlay");
@@ -159,7 +173,12 @@ const COUNTDOWN_FINE_TUNE_DOWN = 18;
 const profileForm = document.getElementById("profileForm");
 const playerNameInput = document.getElementById("playerNameInput");
 const speedSelect = document.getElementById("speedSelect");
-const characterSelect = document.getElementById("characterSelect");
+const openAvatarPickerBtn = document.getElementById("openAvatarPickerBtn");
+const closeAvatarPickerBtn = document.getElementById("closeAvatarPickerBtn");
+const avatarButtonPreview = document.getElementById("avatarButtonPreview");
+const avatarButtonLabel = document.getElementById("avatarButtonLabel");
+const avatarGrid = document.getElementById("avatarGrid");
+const avatarSelectInput = document.getElementById("avatarSelectInput");
 const soundSelect = document.getElementById("soundSelect");
 
 const endTitle = document.getElementById("endTitle");
@@ -286,9 +305,30 @@ document.getElementById("downBtn").addEventListener("click", () => softDrop());
 profileForm.addEventListener("submit", (e) => {
   e.preventDefault();
   saveProfileFromForm();
+  closeOverlay(avatarOverlay);
   closeOverlay(startOverlay);
   startGame();
 });
+
+if (openAvatarPickerBtn) {
+  openAvatarPickerBtn.addEventListener("click", () => {
+    openOverlay(avatarOverlay);
+  });
+}
+
+if (closeAvatarPickerBtn) {
+  closeAvatarPickerBtn.addEventListener("click", () => {
+    closeOverlay(avatarOverlay);
+  });
+}
+
+if (avatarOverlay) {
+  avatarOverlay.addEventListener("click", (event) => {
+    if (event.target === avatarOverlay) {
+      closeOverlay(avatarOverlay);
+    }
+  });
+}
 
 window.addEventListener("keydown", (e) => {
   const typingTarget = isTypingTarget(e.target);
@@ -1321,7 +1361,7 @@ function winGame(message) {
 
   resultVillain.textContent = "🕴️";
   resultPointer.textContent = "";
-  resultHero.textContent = HEROES[heroChoice];
+  renderAvatarInto(resultHero, heroChoice);
   resultWater.className = "result-water clean-water";
   resultStage.className = "result-stage win";
   announceMilestone("Victory. The bottle is clean.");
@@ -1349,7 +1389,7 @@ function loseGame(message) {
 
   resultVillain.textContent = "😂";
   resultPointer.textContent = "👉";
-  resultHero.textContent = HEROES[heroChoice];
+  renderAvatarInto(resultHero, heroChoice);
   resultHero.style.animation = "none";
   void resultHero.offsetWidth;
   resultHero.style.animation = "";
@@ -1438,11 +1478,75 @@ function formatTime(totalSeconds) {
   return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
 }
 
+function getAvatarImagePath(avatarId) {
+  return `img/${avatarId}.png`;
+}
+
+function normalizeAvatarId(rawValue) {
+  if (AVATAR_IDS.includes(rawValue)) return rawValue;
+  if (rawValue && LEGACY_HERO_TO_AVATAR[rawValue]) return LEGACY_HERO_TO_AVATAR[rawValue];
+  return DEFAULT_AVATAR_ID;
+}
+
+function renderAvatarInto(targetEl, avatarId) {
+  if (!targetEl) return;
+
+  const safeAvatarId = normalizeAvatarId(avatarId);
+  targetEl.innerHTML = "";
+
+  const avatarImg = document.createElement("img");
+  avatarImg.className = "hero-avatar-img";
+  avatarImg.src = getAvatarImagePath(safeAvatarId);
+  avatarImg.alt = "";
+  avatarImg.setAttribute("aria-hidden", "true");
+
+  targetEl.appendChild(avatarImg);
+}
+
+function setAvatarSelection(avatarId) {
+  const safeAvatarId = normalizeAvatarId(avatarId);
+
+  if (avatarSelectInput) {
+    avatarSelectInput.value = safeAvatarId;
+  }
+
+  if (!avatarGrid) return;
+
+  const options = avatarGrid.querySelectorAll(".avatar-option");
+  options.forEach((option) => {
+    const isSelected = option.dataset.avatar === safeAvatarId;
+    option.classList.toggle("selected", isSelected);
+    option.setAttribute("aria-pressed", isSelected ? "true" : "false");
+  });
+
+  if (avatarButtonPreview) {
+    avatarButtonPreview.src = getAvatarImagePath(safeAvatarId);
+  }
+
+  if (avatarButtonLabel) {
+    const avatarNumber = safeAvatarId.split("_")[1] || "01";
+    avatarButtonLabel.textContent = `Avatar ${Number(avatarNumber)} selected`;
+  }
+}
+
+function setupAvatarSelector() {
+  if (!avatarGrid) return;
+
+  const options = avatarGrid.querySelectorAll(".avatar-option");
+  options.forEach((option) => {
+    option.addEventListener("click", () => {
+      const chosenAvatar = option.dataset.avatar;
+      setAvatarSelection(chosenAvatar);
+      closeOverlay(avatarOverlay);
+    });
+  });
+}
+
 function saveProfileFromForm() {
   const profile = {
     name: playerNameInput.value.trim() || "Player",
     speed: speedSelect.value,
-    character: characterSelect.value,
+    character: normalizeAvatarId(avatarSelectInput?.value),
     sound: soundSelect.value
   };
   localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
@@ -1462,13 +1566,12 @@ function applyProfile(profile) {
   playerName = profile.name || "Player";
   timeLeft = 0;
   gameSpeed = profile.speed || "slow";
-  heroChoice = profile.character || "builder";
+  heroChoice = normalizeAvatarId(profile.character || profile.avatar);
   soundEnabled = profile.sound !== "off";
 
-  const heroEmoji = HEROES[heroChoice];
-  heroPortrait.textContent = heroEmoji;
+  renderAvatarInto(heroPortrait, heroChoice);
   heroNameEl.textContent = playerName;
-  topHero.textContent = heroEmoji;
+  renderAvatarInto(topHero, heroChoice);
   topHeroName.textContent = playerName;
 }
 
@@ -1476,13 +1579,13 @@ function loadProfileIntoForm() {
   const profile = getSavedProfile() || {
     name: "Player",
     speed: "slow",
-    character: "builder",
+    character: DEFAULT_AVATAR_ID,
     sound: "on"
   };
 
   playerNameInput.value = profile.name;
   speedSelect.value = profile.speed;
-  characterSelect.value = profile.character;
+  setAvatarSelection(profile.character || profile.avatar);
   soundSelect.value = profile.sound || "on";
   applyProfile(profile);
 }
@@ -1600,7 +1703,7 @@ function restoreGameProgress(progress) {
   timeLeft = progress.timeLeft;
   gameSpeed = progress.gameSpeed;
   playerName = progress.playerName;
-  heroChoice = progress.heroChoice;
+  heroChoice = normalizeAvatarId(progress.heroChoice);
   soundEnabled = progress.soundEnabled !== false;
   dirtyRowCountdown = progress.dirtyRowCountdown;
   sludgeCountdown = progress.sludgeCountdown;
@@ -1610,10 +1713,9 @@ function restoreGameProgress(progress) {
   shownMilestones = new Set(progress.shownMilestones || []);
   setMilestoneMessage(progress.lastMilestoneMessage || DEFAULT_MILESTONE_TEXT);
 
-  const heroEmoji = HEROES[heroChoice] || HEROES.builder;
-  heroPortrait.textContent = heroEmoji;
+  renderAvatarInto(heroPortrait, heroChoice);
   heroNameEl.textContent = playerName;
-  topHero.textContent = heroEmoji;
+  renderAvatarInto(topHero, heroChoice);
   topHeroName.textContent = playerName;
 }
 
@@ -1625,6 +1727,7 @@ function init() {
   primeCriticalAudio();
   createGrid();
   resetGrid();
+  setupAvatarSelector();
   loadProfileIntoForm();
   setMilestoneMessage(DEFAULT_MILESTONE_TEXT);
   render();
