@@ -1380,7 +1380,7 @@ function loseGame(message) {
   topTugMarker.classList.add("pulling-lose");
 
   endTitle.textContent = "Game Over";
-  endMessage.textContent = `${message} The businessman points and laughs as your hero falls into dirty water.`;
+  endMessage.textContent = message;
   endScore.textContent = String(score);
   endTimeLabel.textContent = "Time";
   endTime.textContent = `${formatTime(timeLeft)} elapsed`;

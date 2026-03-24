@@ -831,6 +831,7 @@ a {
   left: 50%;
   bottom: clamp(16px, 4vh, 36px);
   color: #ffffff;
+  font-family: "Proxima Nova Black", "Proxima Nova", Avenir, sans-serif;
   font-weight: 900;
   text-align: center;
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.65);
