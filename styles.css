@@ -40,8 +40,8 @@ body {
   font-family: var(--font-sans);
   color: var(--white);
   background:
-    radial-gradient(circle at top, rgba(46, 157, 247, 0.22), transparent 35%),
-    linear-gradient(180deg, #10284d 0%, #071223 100%);
+    radial-gradient(circle at top, rgba(139, 209, 203, 0.26), transparent 38%),
+    linear-gradient(180deg, var(--dark-green) 0%, #0b4a2a 100%);
 }
 
 button,
@@ -181,7 +181,7 @@ a {
 .panel-card {
   background: linear-gradient(180deg, #fff8ea, #f4ebd3);
   color: var(--ink);
-  border: 4px solid #173a69;
+  border: 4px solid #FF902A;
   border-radius: var(--radius);
   padding: 14px;
   box-shadow: var(--shadow);
@@ -851,7 +851,7 @@ a {
   width: min(560px, 100%);
   background: linear-gradient(180deg, #fff8ea, #f4ebd3);
   color: var(--ink);
-  border: 4px solid #173a69;
+  border: 4px solid #FF902A;
   border-radius: 24px;
   padding: 24px;
   box-shadow: var(--shadow);
@@ -871,6 +871,11 @@ a {
 .overlay-panel p,
 .how-list li {
   font-family: var(--font-sans);
+}
+
+#startOverlay .overlay-panel {
+  width: min(460px, 88vw);
+  padding: 18px;
 }
 
 .profile-form {
