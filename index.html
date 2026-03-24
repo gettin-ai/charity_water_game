@@ -10,10 +10,16 @@
   <div class="page-shell">
     <header class="game-header">
       <div class="brand-lockup">
-        <div class="brand-drop" aria-hidden="true">💧</div>
+        <div class="brand-drop" aria-hidden="true">
+          <img src="img/water-can-transparent.png" alt="water can" class="brand-icon">
+        </div>
         <div>
+          <p class="eyebrow">clean water changes everything</p>
           <h1>Purify Drop</h1>
-          <p>Clear polluted water and pull the rope toward clean water.</p>
+          <p class="brand-copy">
+            A clean-water puzzle prototype inspired by the mission of
+            <span class="brand-wordmark-inline">charity: water</span>.
+          </p>
         </div>
       </div>
 
@@ -49,12 +55,16 @@
         <section class="panel-card">
           <div class="panel-title">Scoreboard</div>
           <div class="score-line">
+            <span class="label">Level</span>
+            <strong id="levelText">1</strong>
+          </div>
+          <div class="score-line">
             <span class="label">Score</span>
             <strong id="scoreText">0</strong>
           </div>
           <div class="score-line">
             <span class="label">Time</span>
-            <strong id="timeText">02:00</strong>
+            <strong id="timeText">00:00</strong>
           </div>
           <div class="score-line">
             <span class="label">Dirty Blobs</span>
@@ -99,20 +109,25 @@
       </aside>
 
       <section class="center-stage">
+        <section class="panel-card mission-banner" aria-live="polite">
+          <div class="panel-title">Mission Update</div>
+          <p id="milestoneText">Clear dirty blobs and build purification for a flush.</p>
+        </section>
+
         <div class="bottle-wrap">
           <div class="bottle-neck"></div>
           <div class="bottle-body">
             <div id="grid" class="grid" aria-label="Game grid"></div>
             <div id="floatingItems" class="floating-items" aria-live="polite"></div>
-            <div class="grid-footer">charity: water</div>
+            <div class="grid-footer">water changes everything</div>
           </div>
         </div>
 
         <div class="mobile-controls" aria-label="Movement controls">
-          <button id="leftBtn" class="control-btn" type="button">◀</button>
-          <button id="rotateBtn" class="control-btn" type="button">⟳</button>
-          <button id="rightBtn" class="control-btn" type="button">▶</button>
-          <button id="downBtn" class="control-btn" type="button">▼</button>
+          <button id="leftBtn" class="control-btn" type="button" aria-label="Move left">◀</button>
+          <button id="rotateBtn" class="control-btn" type="button" aria-label="Rotate">⟳</button>
+          <button id="rightBtn" class="control-btn" type="button" aria-label="Move right">▶</button>
+          <button id="downBtn" class="control-btn" type="button" aria-label="Soft drop">▼</button>
         </div>
       </section>
 
@@ -140,12 +155,36 @@
         </section>
       </aside>
     </main>
+
+    <footer class="site-footer panel-card">
+      <div class="footer-copy">
+        <p class="footer-kicker">Inspired by hope, action and clean water.</p>
+        <h2>Learn more about the mission behind this prototype.</h2>
+        <p>
+          This project is designed to support awareness around access to clean water and encourage players
+          to explore the real work happening beyond the game.
+        </p>
+        <p class="footer-wordmark">charity: water</p>
+      </div>
+
+      <div class="footer-actions">
+        <a class="ui-btn secondary footer-link" href="https://www.charitywater.org/" target="_blank" rel="noopener noreferrer">
+          Visit Website
+        </a>
+        <a class="ui-btn primary footer-link" href="https://www.charitywater.org/donate" target="_blank" rel="noopener noreferrer">
+          Donate
+        </a>
+      </div>
+    </footer>
   </div>
+
+  <div id="milestoneToast" class="milestone-toast" aria-live="polite"></div>
 
   <div id="startOverlay" class="overlay open" role="dialog" aria-modal="true" aria-labelledby="startTitle">
     <div class="overlay-panel">
-      <h2 id="startTitle">Build Your Water Hero</h2>
-      <p>Choose a name, game length, speed, and character before you start cleaning the bottle.</p>
+      <p class="overlay-kicker">build your hero</p>
+      <h2 id="startTitle">Start Your Cleanup Run</h2>
+      <p>Choose a name, speed, and character before you start cleaning the bottle.</p>
 
       <form id="profileForm" class="profile-form">
         <label for="playerNameInput">
@@ -180,12 +219,13 @@
 
   <div id="howOverlay" class="overlay" role="dialog" aria-modal="true" aria-labelledby="howTitle">
     <div class="overlay-panel small-panel">
-      <h2 id="howTitle">How To Play</h2>
+      <p class="overlay-kicker">how to play</p>
+      <h2 id="howTitle">Clean The Bottle</h2>
       <ol class="how-list">
         <li>Match 4 blobs of the same color to clear them.</li>
         <li>Clean and dirty blobs can clear together when 4 or more of the same color connect.</li>
         <li>Click yellow cans for bonus points and extra purification.</li>
-        <li>Click toxic sludge to avoid contamination and lowering your score.</li>
+        <li>Click toxic sludge to reduce the penalty before it times out.</li>
         <li>Win by clearing every dirty blob before the bottle fills up.</li>
       </ol>
       <div class="stack-actions">
@@ -196,12 +236,12 @@
 
   <div id="pauseOverlay" class="overlay" role="dialog" aria-modal="true" aria-labelledby="pauseTitle">
     <div class="overlay-panel small-panel">
+      <p class="overlay-kicker">pause</p>
       <h2 id="pauseTitle">Game Paused</h2>
       <p>Take a breath. Resume when you are ready, or change your profile.</p>
       <div class="stack-actions">
         <button id="resumeBtn" class="ui-btn primary" type="button">Resume</button>
         <button id="saveExitBtn" class="ui-btn secondary" type="button">Save & Exit</button>
-        <button id="editProfileBtn" class="ui-btn secondary" type="button">Edit Profile</button>
         <button id="resetBtn" class="ui-btn secondary" type="button">Reset</button>
       </div>
     </div>
@@ -209,6 +249,7 @@
 
   <div id="endOverlay" class="overlay" role="dialog" aria-modal="true" aria-labelledby="endTitle">
     <div class="overlay-panel end-panel">
+      <p class="overlay-kicker">round complete</p>
       <h2 id="endTitle">Game Over</h2>
       <p id="endMessage">Try again and keep the bottle cleaner for longer.</p>
 
@@ -224,7 +265,7 @@
           <strong id="endScore">0</strong>
         </div>
         <div>
-            <span id="endTimeLabel">Time</span>
+          <span id="endTimeLabel">Time</span>
           <strong id="endTime">00:00</strong>
         </div>
       </div>
@@ -238,6 +279,17 @@
   <div id="countdownOverlay" class="overlay" aria-hidden="true">
     <div id="countdownDisplay" class="countdown-display">3</div>
   </div>
+
+  <!-- Game sound effects -->
+  <audio id="soundButton" preload="auto" src="audio/floraphonic-water-droplet-5-165635.mp3"></audio>
+  <audio id="soundCollect" preload="auto" src="audio/freesound_community-key-get-39925.mp3"></audio>
+  <audio id="soundMiss" preload="auto" src="audio/universfield-error-08-206492.mp3"></audio>
+  <audio id="soundAlert" preload="auto" src="audio/freesound_community-warning-sound-6686.mp3"></audio>
+  <audio id="soundFlush" preload="auto" src="audio/water flush.mp3"></audio>
+  <audio id="soundMilestone" preload="auto" src="audio/nomagician-successfinish-ui-sound-effect-467873.mp3"></audio>
+  <audio id="soundPause" preload="auto" src="audio/floraphonic-ararcade-ui-10-229510.mp3"></audio>
+  <audio id="soundWin" preload="auto" src="audio/floraphonic-you-win-sequence-2-183949.mp3"></audio>
+  <audio id="soundLose" preload="auto" src="audio/u_l5xum8z250-losing-horn-313723.mp3"></audio>
 
   <script src="script.js"></script>
 </body>

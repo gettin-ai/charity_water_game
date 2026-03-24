@@ -10,22 +10,23 @@ const SPEEDS = {
 const START_DIRTY_COUNT = 6;
 const DIRTY_ROW_INTERVAL = 35;
 const SLUDGE_INTERVAL = 18;
-const CLICKABLE_INTERVAL = 12;
+const CLICKABLE_INTERVAL = 10;
+const BASE_SLUDGE_CHANCE = 0.35;
+const MAX_JERRY_STREAK = 2;
 const PASSIVE_CONTAM_EVERY = 6;
 
 const CLEAR_SCORE = 25;
 const DIRTY_CLEAR_BONUS = 20;
 const JERRY_SCORE = 75;
-const SLUDGE_CLICK_PENALTY = 10;
-const SLUDGE_MISS_PENALTY = 5;
-const SPEED_BONUS_BASE = 200;
+const SLUDGE_CLICK_CONTAM_REDUCTION = 10;
+const SLUDGE_MISS_CONTAM_GAIN = 5;
 
 const FAIL_CONTAM_GAIN = 1;
 const FAIL_TUG_LOSS = 2;
 const CLEAR_TUG_GAIN = 12;
 const CLEAR_PURIFY_GAIN = 16;
 const DIRTY_ROW_TUG_LOSS = 8;
-const SLUDGE_CONTAM_GAIN = 8;
+const SLUDGE_GRID_CONTAM_GAIN = 8;
 const DIRTY_ROW_CONTAM_GAIN = 24;
 
 const FLUSH_REMOVE_COUNT = 4;
@@ -40,8 +41,37 @@ const HEROES = {
   field: "🧑‍🚰"
 };
 
-const PROFILE_KEY = "purify-drop-profile-v2";
-const GAME_PROGRESS_KEY = "purify-drop-game-progress";
+const PROFILE_KEY = "purify-drop-profile-v3";
+const GAME_PROGRESS_KEY = "purify-drop-game-progress-v3";
+const DEFAULT_MILESTONE_TEXT = "Clear dirty blobs and build purification for a flush.";
+
+const MILESTONES = [
+  {
+    id: "purify-50",
+    when: (state) => state.purification >= 50,
+    text: "Purification is building. A strong clear can set up a flush."
+  },
+  {
+    id: "purify-85",
+    when: (state) => state.purification >= 85,
+    text: "Almost there. One more good clear can trigger a flush."
+  },
+  {
+    id: "contam-75",
+    when: (state) => state.contamination >= 75,
+    text: "Pollution is rising fast. Clear a match before another dirty row appears."
+  },
+  {
+    id: "dirty-3",
+    when: (state) => state.dirtyCount <= 3 && state.dirtyCount > 1 && state.initialDirtyCount > 3,
+    text: "Almost there. Only a few dirty blobs remain."
+  },
+  {
+    id: "dirty-1",
+    when: (state) => state.dirtyCount === 1,
+    text: "One dirty blob left. Finish the cleanup."
+  }
+];
 
 let grid = [];
 let cells = [];
@@ -70,14 +100,21 @@ let clickableLoop = null;
 let nextCapsuleId = 1;
 let boardBusy = false;
 let clearingCells = new Set();
+let jerrySpawnStreak = 0;
 
 let dirtyRowCountdown = DIRTY_ROW_INTERVAL;
 let sludgeCountdown = SLUDGE_INTERVAL;
 let passiveContamCounter = 0;
 
+let initialDirtyCount = 0;
+let shownMilestones = new Set();
+let lastMilestoneMessage = DEFAULT_MILESTONE_TEXT;
+let milestoneToastTimeout = null;
+
 const gridEl = document.getElementById("grid");
 const floatingItemsEl = document.getElementById("floatingItems");
 
+const levelText = document.getElementById("levelText");
 const scoreText = document.getElementById("scoreText");
 const timeText = document.getElementById("timeText");
 const dirtyCountText = document.getElementById("dirtyCountText");
@@ -98,6 +135,9 @@ const topHeroName = document.getElementById("topHeroName");
 const topTugMarker = document.getElementById("topTugMarker");
 
 const nextPreview = document.getElementById("nextPreview");
+
+const milestoneText = document.getElementById("milestoneText");
+const milestoneToast = document.getElementById("milestoneToast");
 
 const startOverlay = document.getElementById("startOverlay");
 const howOverlay = document.getElementById("howOverlay");
@@ -122,6 +162,22 @@ const resultWater = document.getElementById("resultWater");
 const resultStage = document.getElementById("resultStage");
 const playAgainBtn = document.getElementById("playAgainBtn");
 
+const soundButton = document.getElementById("soundButton");
+const soundCollect = document.getElementById("soundCollect");
+const soundMiss = document.getElementById("soundMiss");
+const soundAlert = document.getElementById("soundAlert");
+const soundFlush = document.getElementById("soundFlush");
+const soundMilestone = document.getElementById("soundMilestone");
+const soundPause = document.getElementById("soundPause");
+const soundWin = document.getElementById("soundWin");
+const soundLose = document.getElementById("soundLose");
+
+document.addEventListener("click", (event) => {
+  if (event.target.closest(".ui-btn, .control-btn")) {
+    playSound(soundButton, 0.45);
+  }
+});
+
 document.getElementById("howBtn").addEventListener("click", () => openOverlay(howOverlay));
 document.getElementById("closeHowBtn").addEventListener("click", () => closeOverlay(howOverlay));
 
@@ -139,11 +195,14 @@ document.getElementById("pauseBtn").addEventListener("click", () => {
 
 document.getElementById("resumeBtn").addEventListener("click", () => resumeGame());
 
-document.getElementById("editProfileBtn").addEventListener("click", () => {
-  closeOverlay(pauseOverlay);
-  loadProfileIntoForm();
-  openOverlay(startOverlay);
-});
+const editProfileBtn = document.getElementById("editProfileBtn");
+if (editProfileBtn) {
+  editProfileBtn.addEventListener("click", () => {
+    closeOverlay(pauseOverlay);
+    loadProfileIntoForm();
+    openOverlay(startOverlay);
+  });
+}
 
 document.getElementById("resetBtn").addEventListener("click", () => goToStartScreen());
 
@@ -207,6 +266,22 @@ window.addEventListener("keydown", (e) => {
   }
 });
 
+function playSound(audioEl, volume = 0.55) {
+  if (!audioEl || !audioEl.getAttribute("src")) return;
+
+  try {
+    audioEl.pause();
+    audioEl.currentTime = 0;
+    audioEl.volume = volume;
+    const playPromise = audioEl.play();
+    if (playPromise && typeof playPromise.catch === "function") {
+      playPromise.catch(() => {});
+    }
+  } catch {
+    /* ignore audio playback errors */
+  }
+}
+
 function openOverlay(el) {
   if (!el) return;
   el.classList.add("open");
@@ -215,6 +290,34 @@ function openOverlay(el) {
 function closeOverlay(el) {
   if (!el) return;
   el.classList.remove("open");
+}
+
+function setMilestoneMessage(text) {
+  lastMilestoneMessage = text;
+  milestoneText.textContent = text;
+}
+
+function announceMilestone(text) {
+  setMilestoneMessage(text);
+  milestoneToast.textContent = text;
+  milestoneToast.classList.remove("show");
+  void milestoneToast.offsetWidth;
+  milestoneToast.classList.add("show");
+
+  clearTimeout(milestoneToastTimeout);
+  milestoneToastTimeout = window.setTimeout(() => {
+    milestoneToast.classList.remove("show");
+  }, 2600);
+}
+
+function evaluateMilestones(state) {
+  for (const milestone of MILESTONES) {
+    if (!shownMilestones.has(milestone.id) && milestone.when(state)) {
+      shownMilestones.add(milestone.id);
+      announceMilestone(milestone.text);
+      break;
+    }
+  }
 }
 
 function startLevelCountdown(onDone) {
@@ -277,6 +380,7 @@ function resetGrid() {
 function seedDirtyBlobs() {
   const startingDirtyCount = Math.min(START_DIRTY_COUNT + currentLevel - 1, ROWS * COLS);
   let placed = 0;
+
   while (placed < startingDirtyCount) {
     const r = rand(8, 15);
     const c = rand(0, 7);
@@ -286,6 +390,8 @@ function seedDirtyBlobs() {
       placed++;
     }
   }
+
+  initialDirtyCount = countDirtyBlobs();
 }
 
 function makePiece() {
@@ -375,9 +481,12 @@ function render() {
     }
   }
 
+  const dirtyCount = countDirtyBlobs();
+
+  levelText.textContent = String(currentLevel);
   scoreText.textContent = String(score);
   timeText.textContent = formatTime(timeLeft);
-  dirtyCountText.textContent = String(countDirtyBlobs());
+  dirtyCountText.textContent = String(dirtyCount);
 
   contaminationText.textContent = `${contamination}/100`;
   purificationText.textContent = `${purification}/100`;
@@ -389,6 +498,13 @@ function render() {
 
   const tugPercent = ((tug + 100) / 200) * 100;
   topTugMarker.style.left = `${Math.max(0, Math.min(100, tugPercent))}%`;
+
+  evaluateMilestones({
+    contamination,
+    purification,
+    dirtyCount,
+    initialDirtyCount
+  });
 }
 
 function movePiece(dr, dc) {
@@ -454,6 +570,10 @@ async function lockPiece() {
       score += (result.cleared * CLEAR_SCORE) + (result.dirtyCleared * DIRTY_CLEAR_BONUS);
       purification = clamp(purification + (result.cleared * CLEAR_PURIFY_GAIN), 0, 100);
       tug = clamp(tug + CLEAR_TUG_GAIN + result.dirtyCleared, -100, 100);
+
+      if (result.dirtyCleared > 0) {
+        playSound(soundCollect, 0.5);
+      }
     } else {
       contamination = clamp(contamination + FAIL_CONTAM_GAIN, 0, 100);
       tug = clamp(tug - FAIL_TUG_LOSS, -100, 100);
@@ -600,6 +720,7 @@ async function flushDirtyWater() {
 
   setClearingCells(flushTargets);
   render();
+  playSound(soundFlush, 0.55);
   await wait(CLEAR_ANIMATION_MS);
 
   for (let i = 0; i < removeCount; i++) {
@@ -627,15 +748,79 @@ function addDirtyBottomRow() {
     }
   }
 
+  const safeRowColors = buildSafeDirtyBottomRowColors();
   for (let c = 0; c < COLS; c++) {
-    grid[ROWS - 1][c] = makeCell(COLORS[rand(0, COLORS.length - 1)], true);
+    grid[ROWS - 1][c] = makeCell(safeRowColors[c], true);
   }
 
   tug = clamp(tug - DIRTY_ROW_TUG_LOSS, -100, 100);
+  playSound(soundAlert, 0.48);
 
   if (currentPiece) {
     currentPiece = { ...currentPiece, r: currentPiece.r - 1 };
   }
+}
+
+function buildSafeDirtyBottomRowColors() {
+  const rowColors = new Array(COLS).fill(null);
+
+  function chooseColorAtColumn(colIndex) {
+    if (colIndex >= COLS) {
+      return true;
+    }
+
+    // Shuffle options so the row still feels random.
+    const choices = [...COLORS].sort(() => Math.random() - 0.5);
+
+    for (const color of choices) {
+      if (createsHorizontalRunOfFour(rowColors, colIndex, color)) {
+        continue;
+      }
+
+      if (createsVerticalRunOfFour(colIndex, color)) {
+        continue;
+      }
+
+      rowColors[colIndex] = color;
+      if (chooseColorAtColumn(colIndex + 1)) {
+        return true;
+      }
+      rowColors[colIndex] = null;
+    }
+
+    return false;
+  }
+
+  if (!chooseColorAtColumn(0)) {
+    // Fallback (very unlikely): keep the game running with a random row.
+    for (let c = 0; c < COLS; c++) {
+      rowColors[c] = COLORS[rand(0, COLORS.length - 1)];
+    }
+  }
+
+  return rowColors;
+}
+
+function createsHorizontalRunOfFour(rowColors, colIndex, color) {
+  if (colIndex < 3) return false;
+
+  return (
+    rowColors[colIndex - 1] === color
+    && rowColors[colIndex - 2] === color
+    && rowColors[colIndex - 3] === color
+  );
+}
+
+function createsVerticalRunOfFour(colIndex, color) {
+  let sameColorCountAbove = 0;
+  let r = ROWS - 2;
+
+  while (r >= 0 && grid[r][colIndex] && grid[r][colIndex].color === color) {
+    sameColorCountAbove++;
+    r--;
+  }
+
+  return sameColorCountAbove >= 3;
 }
 
 function addSludgeBlobToGrid() {
@@ -644,7 +829,7 @@ function addSludgeBlobToGrid() {
     const c = rand(0, 7);
     if (!grid[r][c]) {
       grid[r][c] = makeCell(COLORS[rand(0, COLORS.length - 1)], true);
-      contamination = clamp(contamination + SLUDGE_CONTAM_GAIN, 0, 100);
+      contamination = clamp(contamination + SLUDGE_GRID_CONTAM_GAIN, 0, 100);
       return;
     }
   }
@@ -654,7 +839,7 @@ function addSludgeBlobToGrid() {
     const c = rand(0, 7);
     if (!grid[r][c]) {
       grid[r][c] = makeCell(COLORS[rand(0, COLORS.length - 1)], true);
-      contamination = clamp(contamination + SLUDGE_CONTAM_GAIN, 0, 100);
+      contamination = clamp(contamination + SLUDGE_GRID_CONTAM_GAIN, 0, 100);
       return;
     }
   }
@@ -698,11 +883,6 @@ function tickSecond() {
 }
 
 function calculateTimeBonus() {
-  // Award bonus points based on completion time tiers
-  // < 1 minute (60s): 100 points
-  // < 3 minutes (180s): 50 points
-  // < 5 minutes (300s): 25 points
-  // >= 5 minutes: 0 points
   if (timeLeft < 60) {
     return 100;
   } else if (timeLeft < 180) {
@@ -717,7 +897,21 @@ function calculateTimeBonus() {
 function spawnClickable() {
   if (!running || paused || boardBusy) return;
 
-  const type = Math.random() < 0.7 ? "jerry" : "sludge";
+  let type = "jerry";
+
+  // Force a toxic blob after too many jerry cans in a row so sludge always appears.
+  if (jerrySpawnStreak >= MAX_JERRY_STREAK) {
+    type = "sludge";
+  } else {
+    type = Math.random() < BASE_SLUDGE_CHANCE ? "sludge" : "jerry";
+  }
+
+  if (type === "jerry") {
+    jerrySpawnStreak += 1;
+  } else {
+    jerrySpawnStreak = 0;
+  }
+
   const item = document.createElement("button");
   item.type = "button";
   item.className = `float-item ${type}`;
@@ -735,9 +929,11 @@ function spawnClickable() {
       score += JERRY_SCORE;
       purification = clamp(purification + 8, 0, 100);
       showScoreChangeAtItem(item, `+${JERRY_SCORE}`);
+      announceMilestone("Nice catch. The jerry can boosted purification.");
+      playSound(soundCollect, 0.55);
     } else {
-      score = Math.max(0, score - SLUDGE_CLICK_PENALTY);
-      contamination = clamp(contamination - SLUDGE_CONTAM_GAIN, 0, 100);
+      contamination = clamp(contamination - SLUDGE_CLICK_CONTAM_REDUCTION, 0, 100);
+      showScoreChangeAtItem(item, `-${SLUDGE_CLICK_CONTAM_REDUCTION}`, "pollution");
     }
     item.remove();
     render();
@@ -748,29 +944,27 @@ function spawnClickable() {
   setTimeout(() => {
     if (!item.isConnected) return;
     if (type === "sludge") {
-      const pointsLost = deductScore(SLUDGE_MISS_PENALTY);
-      contamination = clamp(contamination + SLUDGE_CONTAM_GAIN, 0, 100);
-      showScoreChangeAtItem(item, `-${pointsLost}`, true);
+      contamination = clamp(contamination + SLUDGE_MISS_CONTAM_GAIN, 0, 100);
+      showScoreChangeAtItem(item, `+${SLUDGE_MISS_CONTAM_GAIN}`, "pollution");
+      announceMilestone("You missed the sludge. Pollution pushed back.");
+      playSound(soundMiss, 0.5);
+
       if (contamination >= 100) {
         contamination = 0;
         addDirtyBottomRow();
         if (!running) return;
       }
       render();
+    } else {
+      playSound(soundMiss, 0.35);
     }
     item.remove();
   }, 5500);
 }
 
-function deductScore(amount) {
-  const previousScore = score;
-  score = Math.max(0, score - amount);
-  return previousScore - score;
-}
-
-function showScoreChangeAtItem(item, text, isNegative = false) {
+function showScoreChangeAtItem(item, text, style = "positive") {
   const feedback = document.createElement("div");
-  feedback.className = `score-feedback ${isNegative ? "negative" : "positive"}`;
+  feedback.className = `score-feedback ${style}`;
   feedback.textContent = text;
 
   const x = item.offsetLeft + (item.offsetWidth / 2);
@@ -780,7 +974,6 @@ function showScoreChangeAtItem(item, text, isNegative = false) {
 
   floatingItemsEl.appendChild(feedback);
 
-  // Remove the feedback after the float animation finishes.
   window.setTimeout(() => {
     feedback.remove();
   }, 850);
@@ -814,6 +1007,7 @@ function startGame(options = {}) {
   if (!preserveScore) {
     score = 0;
   }
+
   contamination = 0;
   purification = 0;
   tug = 0;
@@ -821,7 +1015,13 @@ function startGame(options = {}) {
   sludgeCountdown = SLUDGE_INTERVAL;
   passiveContamCounter = 0;
   boardBusy = false;
+  jerrySpawnStreak = 0;
   clearingCells.clear();
+  shownMilestones = new Set();
+  setMilestoneMessage(DEFAULT_MILESTONE_TEXT);
+
+  // Remove animation classes from the knot
+  topTugMarker.classList.remove("pulling-win", "pulling-lose");
 
   createGrid();
   resetGrid();
@@ -862,7 +1062,13 @@ function goToStartScreen() {
   sludgeCountdown = SLUDGE_INTERVAL;
   passiveContamCounter = 0;
   boardBusy = false;
+  jerrySpawnStreak = 0;
   clearingCells.clear();
+  shownMilestones = new Set();
+  setMilestoneMessage(DEFAULT_MILESTONE_TEXT);
+
+  // Remove animation classes from the knot
+  topTugMarker.classList.remove("pulling-win", "pulling-lose");
 
   createGrid();
   resetGrid();
@@ -880,6 +1086,7 @@ function pauseGame() {
   if (!running || countingDown) return;
   paused = true;
   saveGameProgress();
+  playSound(soundPause, 0.5);
   openOverlay(pauseOverlay);
 }
 
@@ -898,9 +1105,12 @@ function winGame(message) {
   const timeBonus = calculateTimeBonus();
   const finalScore = score + timeBonus;
 
+  // Animate the knot moving to the right (player wins)
+  topTugMarker.classList.add("pulling-win");
+
   endTitle.textContent = "Victory!";
   endMessage.textContent = message;
-  endScore.textContent = `${score} + ${timeBonus} (speed bonus) = ${finalScore}`;
+  endScore.textContent = `${score} + ${timeBonus} = ${finalScore}`;
   endTimeLabel.textContent = "Time";
   endTime.textContent = formatTime(timeLeft);
   playAgainBtn.textContent = `Level ${currentLevel + 1}`;
@@ -911,6 +1121,8 @@ function winGame(message) {
   resultWater.className = "result-water clean-water";
   resultStage.className = "result-stage win";
 
+  playSound(soundWin, 0.62);
+  announceMilestone("Victory. The bottle is clean.");
   openOverlay(endOverlay);
 }
 
@@ -919,6 +1131,9 @@ function loseGame(message) {
   paused = false;
   clearLoops();
   clearGameProgress();
+
+  // Animate the knot moving to the left (player loses)
+  topTugMarker.classList.add("pulling-lose");
 
   endTitle.textContent = "Game Over";
   endMessage.textContent = `${message} The businessman points and laughs as your hero falls into dirty water.`;
@@ -933,6 +1148,7 @@ function loseGame(message) {
   resultWater.className = "result-water dirty-water";
   resultStage.className = "result-stage lose";
 
+  playSound(soundLose, 0.6);
   openOverlay(endOverlay);
 }
 
@@ -1016,10 +1232,6 @@ function formatTime(totalSeconds) {
   return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
 }
 
-function capitalize(value) {
-  return value.charAt(0).toUpperCase() + value.slice(1);
-}
-
 function saveProfileFromForm() {
   const profile = {
     name: playerNameInput.value.trim() || "Player",
@@ -1082,7 +1294,10 @@ function saveGameProgress() {
     dirtyRowCountdown,
     sludgeCountdown,
     passiveContamCounter,
-    nextCapsuleId
+    nextCapsuleId,
+    initialDirtyCount,
+    shownMilestones: [...shownMilestones],
+    lastMilestoneMessage
   };
   localStorage.setItem(GAME_PROGRESS_KEY, JSON.stringify(progress));
 }
@@ -1121,6 +1336,15 @@ function restoreGameProgress(progress) {
   sludgeCountdown = progress.sludgeCountdown;
   passiveContamCounter = progress.passiveContamCounter;
   nextCapsuleId = progress.nextCapsuleId;
+  initialDirtyCount = progress.initialDirtyCount || countDirtyBlobs();
+  shownMilestones = new Set(progress.shownMilestones || []);
+  setMilestoneMessage(progress.lastMilestoneMessage || DEFAULT_MILESTONE_TEXT);
+
+  const heroEmoji = HEROES[heroChoice] || HEROES.builder;
+  heroPortrait.textContent = heroEmoji;
+  heroNameEl.textContent = playerName;
+  topHero.textContent = heroEmoji;
+  topHeroName.textContent = playerName;
 }
 
 function clearGameProgress() {
@@ -1131,6 +1355,7 @@ function init() {
   createGrid();
   resetGrid();
   loadProfileIntoForm();
+  setMilestoneMessage(DEFAULT_MILESTONE_TEXT);
   render();
 
   const shouldRestore = checkForSavedGame();
@@ -1141,7 +1366,6 @@ function init() {
       renderNextPreview();
       render();
       closeOverlay(startOverlay);
-      // Start the game immediately without the countdown since it's a restoration
       running = true;
       paused = false;
       startLoops();
