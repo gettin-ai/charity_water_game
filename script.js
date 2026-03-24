@@ -164,8 +164,10 @@ const playAgainBtn = document.getElementById("playAgainBtn");
 
 const soundButton = document.getElementById("soundButton");
 const soundCollect = document.getElementById("soundCollect");
+const soundJerryCan = document.getElementById("soundJerryCan");
 const soundMiss = document.getElementById("soundMiss");
 const soundAlert = document.getElementById("soundAlert");
+const soundWarningBubble = document.getElementById("soundWarningBubble");
 const soundFlush = document.getElementById("soundFlush");
 const soundMilestone = document.getElementById("soundMilestone");
 const soundPause = document.getElementById("soundPause");
@@ -844,7 +846,7 @@ function addSludgeBlobToGrid() {
     if (!grid[r][c]) {
       grid[r][c] = makeCell(COLORS[rand(0, COLORS.length - 1)], true);
       contamination = clamp(contamination + SLUDGE_GRID_CONTAM_GAIN, 0, 100);
-      playSound(soundAlert, 0.42);
+      playSound(soundWarningBubble, 0.42);
       return;
     }
   }
@@ -855,7 +857,7 @@ function addSludgeBlobToGrid() {
     if (!grid[r][c]) {
       grid[r][c] = makeCell(COLORS[rand(0, COLORS.length - 1)], true);
       contamination = clamp(contamination + SLUDGE_GRID_CONTAM_GAIN, 0, 100);
-      playSound(soundAlert, 0.42);
+      playSound(soundWarningBubble, 0.42);
       return;
     }
   }
@@ -946,7 +948,7 @@ function spawnClickable() {
       purification = clamp(purification + 8, 0, 100);
       showScoreChangeAtItem(item, `+${JERRY_SCORE}`);
       announceMilestone("Nice catch. The jerry can boosted purification.");
-      playSound(soundCollect, 0.55);
+      playSound(soundJerryCan, 0.55);
     } else {
       contamination = clamp(contamination - SLUDGE_CLICK_CONTAM_REDUCTION, 0, 100);
       showScoreChangeAtItem(item, `-${SLUDGE_CLICK_CONTAM_REDUCTION}`, "pollution");
@@ -958,6 +960,9 @@ function spawnClickable() {
   floatingItemsEl.appendChild(item);
 
   if (type === "sludge") {
+    const rumbleCount = Math.random() < 0.5 ? 1 : 2;
+    item.style.setProperty("--toxic-rumble-count", String(rumbleCount));
+    item.classList.add("toxic-appear");
     playSound(soundAlert, 0.42);
   }
 
