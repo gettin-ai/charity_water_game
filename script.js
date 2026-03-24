@@ -140,12 +140,17 @@ const nextPreview = document.getElementById("nextPreview");
 const milestoneText = document.getElementById("milestoneText");
 const milestoneToast = document.getElementById("milestoneToast");
 
+const bootOverlay = document.getElementById("bootOverlay");
+const bootPrompt = document.getElementById("bootPrompt");
 const startOverlay = document.getElementById("startOverlay");
 const howOverlay = document.getElementById("howOverlay");
 const pauseOverlay = document.getElementById("pauseOverlay");
 const endOverlay = document.getElementById("endOverlay");
 const countdownOverlay = document.getElementById("countdownOverlay");
 const countdownDisplay = document.getElementById("countdownDisplay");
+
+let bootReadyForInput = false;
+let bootTimer = null;
 
 const profileForm = document.getElementById("profileForm");
 const playerNameInput = document.getElementById("playerNameInput");
@@ -1369,6 +1374,66 @@ function checkForSavedGame() {
   return false;
 }
 
+function continueFromBootScreen() {
+  const shouldRestore = checkForSavedGame();
+  if (shouldRestore) {
+    const savedProgress = loadGameProgress();
+    if (savedProgress) {
+      restoreGameProgress(savedProgress);
+      renderNextPreview();
+      render();
+      closeOverlay(startOverlay);
+      running = true;
+      paused = false;
+      startLoops();
+      return;
+    }
+  }
+
+  openOverlay(startOverlay);
+}
+
+function hideBootScreenAndContinue() {
+  if (!bootReadyForInput) return;
+  closeOverlay(bootOverlay);
+  continueFromBootScreen();
+}
+
+function showBootScreen() {
+  if (!bootOverlay || !bootPrompt) {
+    continueFromBootScreen();
+    return;
+  }
+
+  bootReadyForInput = false;
+  bootPrompt.classList.remove("visible");
+  openOverlay(bootOverlay);
+
+  clearTimeout(bootTimer);
+  bootTimer = window.setTimeout(() => {
+    bootReadyForInput = true;
+    bootPrompt.classList.add("visible");
+  }, 3200);
+
+  const onBegin = () => {
+    if (!bootReadyForInput) return;
+    bootOverlay.removeEventListener("click", onBegin);
+    bootOverlay.removeEventListener("touchstart", onBegin);
+    document.removeEventListener("keydown", onKeyDownBegin);
+    hideBootScreenAndContinue();
+  };
+
+  const onKeyDownBegin = (event) => {
+    if (event.key === "Enter" || event.key === " " || event.key === "Spacebar") {
+      onBegin();
+    }
+  };
+
+  bootOverlay.addEventListener("click", onBegin);
+  bootOverlay.addEventListener("touchstart", onBegin, { passive: true });
+  document.addEventListener("keydown", onKeyDownBegin);
+}
+
 function restoreGameProgress(progress) {
   grid = progress.grid;
   currentPiece = progress.currentPiece;
@@ -1409,22 +1474,8 @@ function init() {
   setMilestoneMessage(DEFAULT_MILESTONE_TEXT);
   render();
 
-  const shouldRestore = checkForSavedGame();
-  if (shouldRestore) {
-    const savedProgress = loadGameProgress();
-    if (savedProgress) {
-      restoreGameProgress(savedProgress);
-      renderNextPreview();
-      render();
-      closeOverlay(startOverlay);
-      running = true;
-      paused = false;
-      startLoops();
-      return;
-    }
-  }
-
-  openOverlay(startOverlay);
+  closeOverlay(startOverlay);
+  showBootScreen();
 }
 
 init();
